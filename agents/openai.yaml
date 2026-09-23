@@ -1,0 +1,4 @@
+interface:
+  display_name: "Universal Format Converter"
+  short_description: "Convert PDF, Word, images, and office files safely"
+  default_prompt: "Use $universal-format-converter to convert these files and verify the results."
