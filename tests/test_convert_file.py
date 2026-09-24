@@ -26,6 +26,18 @@ class ConverterTests(unittest.TestCase):
             self.assertEqual(output.read_text(encoding="utf-8"), "hello")
             self.assertEqual(second.returncode, 1)
 
+    def test_pdf_page_set_collision_is_guarded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.pdf"
+            output = Path(directory) / "pages.png"
+            existing_page = Path(directory) / "pages-001.png"
+            source.write_bytes(b"not needed because collision is detected first")
+            existing_page.write_bytes(b"existing")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(source), str(output)], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("page output already exists", result.stderr)
+            self.assertEqual(existing_page.read_bytes(), b"existing")
+
 
 if __name__ == "__main__":
     unittest.main()

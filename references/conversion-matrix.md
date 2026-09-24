@@ -23,3 +23,5 @@ python3 scripts/convert_file.py image.png image.webp --quality 85
 ```
 
 The converter never installs dependencies automatically. Install only the engine needed for the requested pair.
+
+For multi-page PDF image conversion, the output name is used as a prefix. Existing numbered page files are treated as one output set and are never overwritten unless `--force` is supplied.

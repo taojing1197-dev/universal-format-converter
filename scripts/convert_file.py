@@ -35,6 +35,21 @@ def ensure_output_available(output: Path, force: bool) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
 
 
+def prepare_outputs(source: Path, output: Path, force: bool) -> None:
+    """Protect both the requested path and numbered PDF page outputs."""
+    ensure_output_available(output, force)
+    if source.suffix.lower() != ".pdf" or output.suffix.lower() not in IMAGE_TYPES:
+        return
+    numbered = sorted(output.parent.glob(f"{output.stem}-[0-9]*{output.suffix}"))
+    collisions = ([output] if output.exists() else []) + numbered
+    if collisions and not force:
+        rendered = ", ".join(str(path) for path in collisions[:5])
+        raise FileExistsError(f"page output already exists: {rendered}; use --force to replace the page set")
+    if force:
+        for path in collisions:
+            path.unlink()
+
+
 def image_convert(source: Path, output: Path, quality: int) -> list[Path]:
     from PIL import Image
 
@@ -178,7 +193,7 @@ def main() -> int:
         print(f"error: input not found: {source}", file=sys.stderr)
         return 2
     try:
-        ensure_output_available(output, args.force)
+        prepare_outputs(source, output, args.force)
         produced = convert(source, output, args, caps)
         missing = [path for path in produced if not path.is_file() or path.stat().st_size == 0]
         if missing:
