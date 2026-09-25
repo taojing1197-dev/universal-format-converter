@@ -38,6 +38,20 @@ class ConverterTests(unittest.TestCase):
             self.assertIn("page output already exists", result.stderr)
             self.assertEqual(existing_page.read_bytes(), b"existing")
 
+    def test_pdf_render_rejects_unsupported_image_format(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.pdf"
+            output = Path(directory) / "output.webp"
+            source.write_bytes(b"format routing happens before PDF parsing")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(source), str(output)], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("supports PNG or JPEG", result.stderr)
+
+    def test_invalid_quality_is_rejected(self):
+        result = subprocess.run([sys.executable, str(SCRIPT), "--check", "--quality", "101"], text=True, capture_output=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--quality must be between 1 and 100", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

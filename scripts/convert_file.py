@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 IMAGE_TYPES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
+PDF_RENDER_TYPES = {".png", ".jpg", ".jpeg"}
 OFFICE_TYPES = {".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".odt", ".ods", ".odp"}
 TEXT_TYPES = {".txt", ".md"}
 
@@ -153,8 +154,10 @@ def convert(source: Path, output: Path, args: argparse.Namespace, caps: dict[str
         if not caps["pillow"]:
             raise RuntimeError("image-to-PDF needs Pillow")
         return images_to_pdf(source, output)
-    if source_type == ".pdf" and output_type in IMAGE_TYPES:
+    if source_type == ".pdf" and output_type in PDF_RENDER_TYPES:
         return pdf_to_images(source, output, args.dpi, caps)
+    if source_type == ".pdf" and output_type in IMAGE_TYPES:
+        raise RuntimeError("PDF rendering supports PNG or JPEG output; render to PNG before converting to another image format")
     if source_type == ".pdf" and output_type == ".txt":
         if not caps["pypdf"]:
             raise RuntimeError("PDF-to-text needs pypdf")
@@ -182,6 +185,10 @@ def main() -> int:
     parser.add_argument("--dpi", type=int, default=180)
     parser.add_argument("--quality", type=int, default=85)
     args = parser.parse_args()
+    if args.dpi <= 0:
+        parser.error("--dpi must be greater than zero")
+    if not 1 <= args.quality <= 100:
+        parser.error("--quality must be between 1 and 100")
     caps = capabilities()
     if args.check:
         print(json.dumps(caps, indent=2) if args.as_json else "\n".join(f"{key}: {'yes' if value else 'no'}" for key, value in caps.items()))
