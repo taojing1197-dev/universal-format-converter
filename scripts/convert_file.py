@@ -36,19 +36,21 @@ def ensure_output_available(output: Path, force: bool) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
 
 
-def prepare_outputs(source: Path, output: Path, force: bool) -> None:
+def page_output_set(source: Path, output: Path) -> list[Path]:
+    if source.suffix.lower() != ".pdf" or output.suffix.lower() not in IMAGE_TYPES:
+        return []
+    numbered = sorted(output.parent.glob(f"{output.stem}-[0-9]*{output.suffix}"))
+    return ([output] if output.exists() else []) + numbered
+
+
+def prepare_outputs(source: Path, output: Path, force: bool) -> list[Path]:
     """Protect both the requested path and numbered PDF page outputs."""
     ensure_output_available(output, force)
-    if source.suffix.lower() != ".pdf" or output.suffix.lower() not in IMAGE_TYPES:
-        return
-    numbered = sorted(output.parent.glob(f"{output.stem}-[0-9]*{output.suffix}"))
-    collisions = ([output] if output.exists() else []) + numbered
+    collisions = page_output_set(source, output)
     if collisions and not force:
         rendered = ", ".join(str(path) for path in collisions[:5])
         raise FileExistsError(f"page output already exists: {rendered}; use --force to replace the page set")
-    if force:
-        for path in collisions:
-            path.unlink()
+    return collisions
 
 
 def image_convert(source: Path, output: Path, quality: int) -> list[Path]:
@@ -200,11 +202,16 @@ def main() -> int:
         print(f"error: input not found: {source}", file=sys.stderr)
         return 2
     try:
-        prepare_outputs(source, output, args.force)
+        previous_outputs = prepare_outputs(source, output, args.force)
         produced = convert(source, output, args, caps)
         missing = [path for path in produced if not path.is_file() or path.stat().st_size == 0]
         if missing:
             raise RuntimeError(f"conversion produced missing or empty output: {missing}")
+        if args.force:
+            produced_set = set(produced)
+            for stale in previous_outputs:
+                if stale not in produced_set and stale.exists():
+                    stale.unlink()
     except (FileExistsError, OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

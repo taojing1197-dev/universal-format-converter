@@ -52,6 +52,17 @@ class ConverterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("--quality must be between 1 and 100", result.stderr)
 
+    def test_force_preserves_existing_pages_when_conversion_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "invalid.pdf"
+            output = Path(directory) / "pages.png"
+            existing_page = Path(directory) / "pages-001.png"
+            source.write_bytes(b"invalid pdf")
+            existing_page.write_bytes(b"keep me")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(source), str(output), "--force"], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(existing_page.read_bytes(), b"keep me")
+
 
 if __name__ == "__main__":
     unittest.main()

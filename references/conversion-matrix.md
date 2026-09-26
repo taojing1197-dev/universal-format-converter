@@ -25,5 +25,6 @@ python3 scripts/convert_file.py image.png image.webp --quality 85
 The converter never installs dependencies automatically. Install only the engine needed for the requested pair.
 
 For multi-page PDF image conversion, the output name is used as a prefix. Existing numbered page files are treated as one output set and are never overwritten unless `--force` is supplied.
+With `--force`, stale pages are removed only after a successful conversion; a failed conversion does not delete the previous page set.
 
 Direct PDF rendering is limited to PNG and JPEG because the supported render engines do not consistently produce WebP, BMP, or TIFF. Render to PNG first, then run a second image conversion when another format is required.
