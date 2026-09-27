@@ -63,6 +63,19 @@ class ConverterTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertEqual(existing_page.read_bytes(), b"keep me")
 
+    def test_input_cannot_be_overwritten_in_place_even_with_force(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.txt"
+            source.write_text("keep me", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(source), str(source), "--force"],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("must be different paths", result.stderr)
+            self.assertEqual(source.read_text(encoding="utf-8"), "keep me")
+
 
 if __name__ == "__main__":
     unittest.main()

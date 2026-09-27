@@ -201,6 +201,9 @@ def main() -> int:
     if not source.is_file():
         print(f"error: input not found: {source}", file=sys.stderr)
         return 2
+    if source == output:
+        print("error: input and output must be different paths", file=sys.stderr)
+        return 2
     try:
         previous_outputs = prepare_outputs(source, output, args.force)
         produced = convert(source, output, args, caps)
