@@ -9,6 +9,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -134,11 +135,12 @@ def office_to_pdf(source: Path, output: Path, caps: dict[str, bool]) -> list[Pat
     executable = shutil.which("soffice") or shutil.which("libreoffice")
     if not executable or not caps["libreoffice"]:
         raise RuntimeError("office-to-PDF needs LibreOffice")
-    subprocess.run([executable, "--headless", "--convert-to", "pdf", "--outdir", str(output.parent), str(source)], check=True)
-    generated = output.parent / f"{source.stem}.pdf"
-    if generated != output:
-        if output.exists():
-            output.unlink()
+    with tempfile.TemporaryDirectory(prefix=".format-converter-", dir=output.parent) as directory:
+        temporary_output = Path(directory)
+        subprocess.run([executable, "--headless", "--convert-to", "pdf", "--outdir", str(temporary_output), str(source)], check=True)
+        generated = temporary_output / f"{source.stem}.pdf"
+        if not generated.is_file():
+            raise RuntimeError("LibreOffice did not produce the expected PDF")
         generated.replace(output)
     return [output]
 

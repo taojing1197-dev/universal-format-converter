@@ -1,12 +1,21 @@
 import json
+import importlib.util
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "convert_file.py"
+
+
+def load_converter_module():
+    spec = importlib.util.spec_from_file_location("convert_file", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class ConverterTests(unittest.TestCase):
@@ -75,6 +84,28 @@ class ConverterTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("must be different paths", result.stderr)
             self.assertEqual(source.read_text(encoding="utf-8"), "keep me")
+
+    def test_office_conversion_does_not_overwrite_intermediate_name_collision(self):
+        converter = load_converter_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.docx"
+            output = root / "renamed.pdf"
+            collision = root / "source.pdf"
+            source.write_bytes(b"document")
+            collision.write_bytes(b"keep me")
+
+            def fake_run(command, check):
+                self.assertTrue(check)
+                outdir = Path(command[command.index("--outdir") + 1])
+                (outdir / "source.pdf").write_bytes(b"converted")
+
+            with mock.patch.object(converter.shutil, "which", return_value="/usr/bin/soffice"), mock.patch.object(converter.subprocess, "run", side_effect=fake_run):
+                produced = converter.office_to_pdf(source, output, {"libreoffice": True})
+
+            self.assertEqual(produced, [output])
+            self.assertEqual(output.read_bytes(), b"converted")
+            self.assertEqual(collision.read_bytes(), b"keep me")
 
 
 if __name__ == "__main__":
