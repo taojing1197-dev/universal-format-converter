@@ -5,6 +5,7 @@ A Codex skill with a portable CLI for safe conversions among PDF, Word, images, 
 The converter detects available engines, refuses accidental overwrites, preserves the source, and verifies that outputs exist and are non-empty. Conversion engines are optional so users install only what they need.
 Input and output must resolve to different paths, including when `--force` is used.
 Office conversions use an isolated temporary output directory so a source-named PDF beside the requested destination is never overwritten as an intermediate file.
+PDF page-set cleanup only treats strictly numbered siblings as generated pages, preserving similarly named unrelated files.
 
 Optional Python engines are listed in `requirements-optional.txt`. LibreOffice enables office-to-PDF conversion, while Poppler provides a PDF-to-image fallback.
 

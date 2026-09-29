@@ -47,6 +47,19 @@ class ConverterTests(unittest.TestCase):
             self.assertIn("page output already exists", result.stderr)
             self.assertEqual(existing_page.read_bytes(), b"existing")
 
+    def test_page_output_set_ignores_similar_unrelated_files(self):
+        converter = load_converter_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "input.pdf"
+            output = root / "pages.png"
+            numbered = root / "pages-001.png"
+            unrelated = root / "pages-1-backup.png"
+            source.write_bytes(b"pdf")
+            numbered.write_bytes(b"page")
+            unrelated.write_bytes(b"keep")
+            self.assertEqual(converter.page_output_set(source, output), [numbered])
+
     def test_pdf_render_rejects_unsupported_image_format(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "input.pdf"

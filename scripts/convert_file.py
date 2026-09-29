@@ -40,7 +40,12 @@ def ensure_output_available(output: Path, force: bool) -> None:
 def page_output_set(source: Path, output: Path) -> list[Path]:
     if source.suffix.lower() != ".pdf" or output.suffix.lower() not in IMAGE_TYPES:
         return []
-    numbered = sorted(output.parent.glob(f"{output.stem}-[0-9]*{output.suffix}"))
+    prefix = f"{output.stem}-"
+    numbered = sorted(
+        candidate
+        for candidate in output.parent.glob(f"{prefix}*{output.suffix}")
+        if candidate.stem.startswith(prefix) and candidate.stem[len(prefix):].isdigit()
+    )
     return ([output] if output.exists() else []) + numbered
 
 
