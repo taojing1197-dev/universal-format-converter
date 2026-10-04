@@ -74,6 +74,11 @@ class ConverterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("--quality must be between 1 and 100", result.stderr)
 
+    def test_empty_output_set_is_rejected(self):
+        converter = load_converter_module()
+        with self.assertRaisesRegex(RuntimeError, "produced no output"):
+            converter.validate_outputs([])
+
     def test_force_preserves_existing_pages_when_conversion_fails(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "invalid.pdf"

@@ -184,6 +184,14 @@ def convert(source: Path, output: Path, args: argparse.Namespace, caps: dict[str
     raise RuntimeError(f"unsupported conversion: {source_type or '(none)'} -> {output_type or '(none)'}")
 
 
+def validate_outputs(produced: list[Path]) -> None:
+    if not produced:
+        raise RuntimeError("conversion produced no output")
+    missing = [path for path in produced if not path.is_file() or path.stat().st_size == 0]
+    if missing:
+        raise RuntimeError(f"conversion produced missing or empty output: {missing}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", nargs="?", type=Path)
@@ -214,9 +222,7 @@ def main() -> int:
     try:
         previous_outputs = prepare_outputs(source, output, args.force)
         produced = convert(source, output, args, caps)
-        missing = [path for path in produced if not path.is_file() or path.stat().st_size == 0]
-        if missing:
-            raise RuntimeError(f"conversion produced missing or empty output: {missing}")
+        validate_outputs(produced)
         if args.force:
             produced_set = set(produced)
             for stale in previous_outputs:
